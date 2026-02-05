@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: face_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: face_db
+      MYSQL_USER: face_user
+      MYSQL_PASSWORD: face_pass
+      TZ: Asia/Bangkok
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-time-zone='+07:00'
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  backend:
+    build: .
+    container_name: face_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - ./models:/app/models
+      - ./faces:/app/faces
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=face_user
+      - DB_PASSWORD=face_pass
+      - DB_NAME=face_db
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
